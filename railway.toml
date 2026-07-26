@@ -1,0 +1,7 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/api/Dockerfile"
+
+[deploy]
+startCommand = "uvicorn insightbridge.main:app --host 0.0.0.0 --port $PORT"
+restartPolicyType = "ON_FAILURE"

@@ -1,0 +1,64 @@
+version: 1
+connection: analytics
+description: Demo SaaS metrics for InsightBridge portfolio dataset
+
+tables:
+  analytics.customers:
+    columns:
+      id: { type: integer, pii: false }
+      name: { type: string, pii: true }
+      region: { type: string }
+      segment: { type: string }
+      created_at: { type: timestamp }
+
+  analytics.subscriptions:
+    columns:
+      customer_id: { type: integer }
+      plan: { type: string }
+      mrr_cents: { type: integer, description: "Monthly recurring revenue in cents" }
+      status: { type: string, enum: [active, cancelled] }
+      started_at: { type: date }
+      cancelled_at: { type: date, nullable: true }
+
+  analytics.orders:
+    columns:
+      customer_id: { type: integer }
+      amount_cents: { type: integer }
+      order_date: { type: date }
+      product_category: { type: string }
+
+metrics:
+  mrr:
+    label: Monthly Recurring Revenue (MRR)
+    sql: "SUM(s.mrr_cents) FILTER (WHERE s.status = 'active') / 100.0"
+    from: analytics.subscriptions s
+    format: currency_usd
+
+  active_subscriptions:
+    label: Active subscriptions
+    sql: "COUNT(*) FILTER (WHERE s.status = 'active')"
+    from: analytics.subscriptions s
+    format: integer
+
+  churned_subscriptions:
+    label: Churned subscriptions
+    sql: "COUNT(*) FILTER (WHERE s.status = 'cancelled')"
+    from: analytics.subscriptions s
+    format: integer
+
+dimensions:
+  region:
+    column: c.region
+    table: analytics.customers c
+  segment:
+    column: c.segment
+    table: analytics.customers c
+  plan:
+    column: s.plan
+    table: analytics.subscriptions s
+
+policies:
+  allowed_schemas: [analytics]
+  forbidden_keywords: [INSERT, UPDATE, DELETE, DROP, TRUNCATE, ALTER, CREATE, GRANT]
+  max_rows: 10000
+  require_limit: true
