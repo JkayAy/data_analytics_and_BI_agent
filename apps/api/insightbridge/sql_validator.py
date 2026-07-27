@@ -6,7 +6,6 @@ from typing import Any
 import sqlglot
 from sqlglot import exp
 
-
 FORBIDDEN = frozenset(
     {"insert", "update", "delete", "drop", "truncate", "alter", "create", "grant", "revoke"}
 )

@@ -10,7 +10,6 @@ from insightbridge.demo_sql import try_demo_sql
 from insightbridge.memory import format_history_for_prompt
 from insightbridge.semantic import load_semantic_layer, semantic_context_for_prompt
 
-
 SYSTEM_PROMPT = """You are a senior analytics engineer. Given a business question and a semantic layer,
 output a single PostgreSQL SELECT query against the analytics schema only.
 

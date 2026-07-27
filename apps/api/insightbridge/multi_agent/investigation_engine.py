@@ -5,7 +5,7 @@ from typing import Any
 
 from insightbridge.config import settings
 from insightbridge.demo_sql import try_demo_sql
-from insightbridge.semantic import allowed_schemas, pii_columns
+from insightbridge.semantic import allowed_schemas, load_semantic_layer, pii_columns
 from insightbridge.warehouse import WarehouseError, execute_query
 
 

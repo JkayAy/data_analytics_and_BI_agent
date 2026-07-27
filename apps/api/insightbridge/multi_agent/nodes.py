@@ -3,17 +3,16 @@ from __future__ import annotations
 import json
 import re
 import time
-from typing import Any
 
 from insightbridge.config import settings
-from insightbridge.memory import format_history_for_prompt, planner_context_from_history
 from insightbridge.llm import generate_sql
+from insightbridge.memory import format_history_for_prompt, planner_context_from_history
 from insightbridge.multi_agent.state import AgentTraceStep, BIAgentState
-from insightbridge.semantic import load_semantic_layer, semantic_context_for_prompt
+from insightbridge.semantic import load_semantic_layer
 
 INVESTIGATION_PATTERN = re.compile(
     r"\b(why|root cause|drivers?|decline|dropped|explain|investigate)\b",
-    re.I,
+    re.IGNORECASE,
 )
 
 
@@ -64,7 +63,7 @@ def planner_node(state: BIAgentState) -> BIAgentState:
         state["planner_reasoning"] = data.get("reasoning", "")
     else:
         state["intent"] = "investigation" if investigation else "metric"
-        if re.search(r"\b(region|segment|plan|month|trend)\b", question, re.I):
+        if re.search(r"\b(region|segment|plan|month|trend)\b", question, re.IGNORECASE):
             state["intent"] = "breakdown"
         state["mode"] = "investigation" if investigation else "standard"
         state["plan_steps"] = (
@@ -86,7 +85,6 @@ def planner_node(state: BIAgentState) -> BIAgentState:
 
 def sql_specialist_node(state: BIAgentState) -> BIAgentState:
     start = time.perf_counter()
-    from insightbridge.llm import generate_sql
 
     attempts = state.get("sql_attempts", 0) + 1
     state["sql_attempts"] = attempts

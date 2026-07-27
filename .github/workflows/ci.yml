@@ -17,6 +17,8 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r requirements.txt
+      - run: pip install ruff
+      - run: ruff check insightbridge tests
       - run: pytest -q
 
   web:
@@ -30,6 +32,7 @@ jobs:
         with:
           node-version: "20"
       - run: npm install
+      - run: npm run lint
       - run: npm run build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000

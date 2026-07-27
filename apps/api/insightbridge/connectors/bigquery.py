@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import time
 from typing import Any
 
@@ -62,7 +61,6 @@ class BigQueryConnector:
         start = time.perf_counter()
         try:
             client = self._client()
-            job_config = client._default_query_job_config if hasattr(client, "_default_query_job_config") else None
             from google.cloud import bigquery
 
             cfg = bigquery.QueryJobConfig(

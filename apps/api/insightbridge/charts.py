@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from typing import Any
 
 
@@ -73,9 +72,7 @@ def _numeric_columns(columns: list[str], rows: list[dict[str, Any]]) -> list[str
     sample = rows[0]
     for c in columns:
         v = sample.get(c)
-        if isinstance(v, (int, float)) and not isinstance(v, bool):
-            nums.append(c)
-        elif v is not None and _looks_numeric(v):
+        if isinstance(v, (int, float)) and not isinstance(v, bool) or v is not None and _looks_numeric(v):
             nums.append(c)
     return nums
 

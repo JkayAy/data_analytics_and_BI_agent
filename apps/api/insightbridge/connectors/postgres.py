@@ -26,10 +26,9 @@ class PostgresConnector:
         return "postgres"
 
     def test(self) -> str:
-        with psycopg.connect(self.url) as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT 1 AS ok")
-                row = cur.fetchone()
+        with psycopg.connect(self.url) as conn, conn.cursor() as cur:
+            cur.execute("SELECT 1 AS ok")
+            row = cur.fetchone()
         return f"Postgres OK ({row[0] if row else 1})"
 
     def execute_read_only(

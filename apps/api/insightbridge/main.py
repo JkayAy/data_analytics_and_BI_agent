@@ -1,12 +1,8 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-
 from typing import Literal
-
 from uuid import UUID
-
-from insightbridge.request_context import AuthContext
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,6 +17,7 @@ from insightbridge.auth_jwt import (
     verify_magic_link,
 )
 from insightbridge.config import settings
+from insightbridge.connectors.registry import get_connector
 from insightbridge.db import (
     add_message,
     create_conversation,
@@ -36,10 +33,6 @@ from insightbridge.db_connections import (
     list_connections,
     set_active_connection,
 )
-from insightbridge.db_tenancy import get_me, log_audit
-from insightbridge.connectors.registry import get_connector
-from insightbridge.memory import messages_to_history
-from insightbridge.multi_agent.graph import AGENT_CAPABILITIES, GRAPH_VERSION, PHASE_STATUS
 from insightbridge.db_delivery import (
     create_delivery_channel,
     create_scheduled_report,
@@ -48,6 +41,7 @@ from insightbridge.db_delivery import (
     list_scheduled_reports,
     set_schedule_enabled,
 )
+from insightbridge.db_tenancy import get_me, log_audit
 from insightbridge.delivery.runner import run_due_scheduled_reports
 from insightbridge.delivery.webhook_client import WebhookDeliveryError
 from insightbridge.integrations.slack_commands import (
@@ -56,10 +50,13 @@ from insightbridge.integrations.slack_commands import (
     parse_slash_command,
     verify_slack_signature,
 )
+from insightbridge.memory import messages_to_history
+from insightbridge.multi_agent.graph import AGENT_CAPABILITIES, GRAPH_VERSION, PHASE_STATUS
+from insightbridge.request_context import AuthContext
 from insightbridge.scheduler_service import start_scheduler, stop_scheduler
-from insightbridge.usage import UsageQuotaExceeded, get_org_usage, record_query_usage, ensure_quota
 from insightbridge.security import optional_api_key
-from insightbridge.semantic import load_semantic_layer, semantic_context_for_prompt
+from insightbridge.semantic import load_semantic_layer
+from insightbridge.usage import UsageQuotaExceeded, ensure_quota, get_org_usage, record_query_usage
 from insightbridge.warehouse import active_connection_summary
 
 

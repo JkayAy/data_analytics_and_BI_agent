@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import time
 from typing import Any
 
 from insightbridge.config import settings
@@ -55,10 +54,9 @@ def explain_query(sql: str, allowed_schemas: set[str]) -> str:
 
     from insightbridge.config import settings as s
 
-    with psycopg.connect(s.database_url) as conn:
-        with conn.cursor() as cur:
-            cur.execute(f"EXPLAIN {bounded}")
-            lines = [row[0] for row in cur.fetchall()]
+    with psycopg.connect(s.database_url) as conn, conn.cursor() as cur:
+        cur.execute(f"EXPLAIN {bounded}")
+        lines = [row[0] for row in cur.fetchall()]
     return "\n".join(lines)
 
 

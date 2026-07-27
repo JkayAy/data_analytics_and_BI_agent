@@ -21,7 +21,7 @@ def allowed_schemas(layer: dict[str, Any]) -> set[str]:
 
 def pii_columns(layer: dict[str, Any]) -> set[str]:
     cols: set[str] = set()
-    for _table, meta in (layer.get("tables") or {}).items():
+    for meta in (layer.get("tables") or {}).values():
         for col_name, col_meta in (meta.get("columns") or {}).items():
             if isinstance(col_meta, dict) and col_meta.get("pii"):
                 cols.add(col_name)

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import csv
 import io
-from typing import Any
 
 from insightbridge.db import list_query_runs_for_org
 

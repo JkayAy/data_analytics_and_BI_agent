@@ -8,7 +8,7 @@ from urllib.parse import parse_qs
 from insightbridge.agent import run_agent
 from insightbridge.config import settings
 from insightbridge.delivery.formatters import format_slack_ephemeral
-from insightbridge.usage import UsageQuotaExceeded, ensure_quota, record_query_usage
+from insightbridge.usage import ensure_quota, record_query_usage
 
 
 class SlackSignatureError(Exception):

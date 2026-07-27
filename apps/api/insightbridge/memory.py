@@ -6,7 +6,7 @@ from typing import Any
 FOLLOW_UP_PATTERN = re.compile(
     r"\b(break (it )?down|by region|by segment|same for|that|those|what about|"
     r"drill down|more detail|expand|split by|per region|per segment)\b",
-    re.I,
+    re.IGNORECASE,
 )
 
 

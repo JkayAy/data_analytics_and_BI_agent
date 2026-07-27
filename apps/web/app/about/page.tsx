@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 
 export default function AboutPage() {
@@ -24,7 +25,7 @@ export default function AboutPage() {
           <li>QA Critic — quality gate</li>
         </ul>
         <p>
-          See <a href="/">Chat</a> agent trace after each ask, or <code>GET /v1/agent/capabilities</code> on
+          See <Link href="/">Chat</Link> agent trace after each ask, or <code>GET /v1/agent/capabilities</code> on
           the API.
         </p>
 
