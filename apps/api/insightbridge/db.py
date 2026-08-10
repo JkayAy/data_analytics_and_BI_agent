@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -12,6 +14,22 @@ from insightbridge.config import settings
 
 def get_conn():
     return psycopg.connect(settings.database_url, row_factory=dict_row)
+
+
+def _json_safe(value: Any) -> Any:
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, dict):
+        return {k: _json_safe(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_json_safe(v) for v in value]
+    return value
+
+
+def _json_dumps(value: Any) -> str:
+    return json.dumps(_json_safe(value))
 
 
 def create_conversation(
@@ -58,7 +76,7 @@ def add_message(conversation_id: UUID, role: str, content: dict[str, Any]) -> di
                 VALUES (%s, %s, %s::jsonb)
                 RETURNING id, conversation_id, role, content, created_at
                 """,
-            (str(conversation_id), role, json.dumps(content)),
+            (str(conversation_id), role, _json_dumps(content)),
         )
         row = cur.fetchone()
         conn.commit()
@@ -96,9 +114,9 @@ def save_query_run(
                 row_count,
                 duration_ms,
                 error_message,
-                json.dumps(result_preview) if result_preview is not None else None,
-                json.dumps(chart_spec) if chart_spec else None,
-                json.dumps(run_metadata) if run_metadata else None,
+                json.dumps(_json_safe(result_preview)) if result_preview is not None else None,
+                json.dumps(_json_safe(chart_spec)) if chart_spec else None,
+                json.dumps(_json_safe(run_metadata)) if run_metadata else None,
                 org_id,
             ),
         )
