@@ -14,16 +14,10 @@ def try_demo_sql(question: str) -> DemoMatch | None:
     """Rule-based SQL for portfolio demo when no LLM key is configured."""
     q = question.lower().strip()
 
-    if _matches(q, r"\bmrr\b", r"recurring revenue", r"monthly revenue"):
-        return DemoMatch(
-            sql="""
-SELECT ROUND(SUM(s.mrr_cents) FILTER (WHERE s.status = 'active') / 100.0, 2) AS mrr_usd
-FROM analytics.subscriptions s
-""".strip(),
-            assumptions=["MRR = sum of active subscription MRR in USD", "Excludes one-time order revenue"],
-        )
-
-    if _matches(q, r"by region", r"per region", r"each region") and _matches(q, r"revenue", r"mrr", r"subscription"):
+    # More specific patterns first — generic MRR total is last.
+    if _matches(q, r"by region", r"per region", r"each region", r"across regions") and _matches(
+        q, r"revenue", r"mrr", r"subscription"
+    ):
         return DemoMatch(
             sql="""
 SELECT c.region,
@@ -34,21 +28,6 @@ GROUP BY c.region
 ORDER BY mrr_usd DESC
 """.strip(),
             assumptions=["Active subscriptions only", "Joined customers for region"],
-        )
-
-    if _matches(q, r"churn", r"cancelled", r"canceled"):
-        return DemoMatch(
-            sql="""
-SELECT COUNT(*) FILTER (WHERE status = 'cancelled') AS churned,
-       COUNT(*) FILTER (WHERE status = 'active') AS active,
-       ROUND(
-         100.0 * COUNT(*) FILTER (WHERE status = 'cancelled')
-         / NULLIF(COUNT(*), 0),
-         2
-       ) AS churn_pct
-FROM analytics.subscriptions
-""".strip(),
-            assumptions=["Churn % = cancelled / all subscriptions in dataset"],
         )
 
     if _matches(q, r"top", r"best", r"highest") and _matches(q, r"customer", r"clients"):
@@ -65,18 +44,19 @@ LIMIT 10
             assumptions=["Ranked by active MRR", "Customer names masked in API if PII policy applies"],
         )
 
-    if _matches(q, r"segment"):
+    if _matches(q, r"churn", r"cancelled", r"canceled"):
         return DemoMatch(
             sql="""
-SELECT c.segment,
-       COUNT(DISTINCT c.id) AS customers,
-       ROUND(SUM(s.mrr_cents) FILTER (WHERE s.status = 'active') / 100.0, 2) AS mrr_usd
-FROM analytics.customers c
-LEFT JOIN analytics.subscriptions s ON s.customer_id = c.id
-GROUP BY c.segment
-ORDER BY mrr_usd DESC NULLS LAST
+SELECT COUNT(*) FILTER (WHERE status = 'cancelled') AS churned,
+       COUNT(*) FILTER (WHERE status = 'active') AS active,
+       ROUND(
+         100.0 * COUNT(*) FILTER (WHERE status = 'cancelled')
+         / NULLIF(COUNT(*), 0),
+         2
+       ) AS churn_pct
+FROM analytics.subscriptions
 """.strip(),
-            assumptions=["Includes customers with no subscription via LEFT JOIN"],
+            assumptions=["Churn % = cancelled / all subscriptions in dataset"],
         )
 
     if _matches(q, r"order", r"orders", r"one-time", r"bookings"):
@@ -103,6 +83,20 @@ ORDER BY revenue_usd DESC
             assumptions=["One-time orders only"],
         )
 
+    if _matches(q, r"segment"):
+        return DemoMatch(
+            sql="""
+SELECT c.segment,
+       COUNT(DISTINCT c.id) AS customers,
+       ROUND(SUM(s.mrr_cents) FILTER (WHERE s.status = 'active') / 100.0, 2) AS mrr_usd
+FROM analytics.customers c
+LEFT JOIN analytics.subscriptions s ON s.customer_id = c.id
+GROUP BY c.segment
+ORDER BY mrr_usd DESC NULLS LAST
+""".strip(),
+            assumptions=["Includes customers with no subscription via LEFT JOIN"],
+        )
+
     if _matches(q, r"plan"):
         return DemoMatch(
             sql="""
@@ -122,6 +116,15 @@ ORDER BY mrr_usd DESC
 SELECT COUNT(*) AS customer_count FROM analytics.customers
 """.strip(),
             assumptions=["Total customers in demo dataset"],
+        )
+
+    if _matches(q, r"\bmrr\b", r"recurring revenue", r"monthly revenue"):
+        return DemoMatch(
+            sql="""
+SELECT ROUND(SUM(s.mrr_cents) FILTER (WHERE s.status = 'active') / 100.0, 2) AS mrr_usd
+FROM analytics.subscriptions s
+""".strip(),
+            assumptions=["MRR = sum of active subscription MRR in USD", "Excludes one-time order revenue"],
         )
 
     return None
