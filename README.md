@@ -2,34 +2,82 @@
 
 ![CI](https://github.com/JkayAy/data_analytics_and_BI_agent/actions/workflows/ci.yml/badge.svg)
 
-**Enterprise multi-agent BI platform** — eight specialist agents (Planner, SQL, Governance, Executor, Investigation, Analyst, Visualization, QA) orchestrated with **LangGraph**, running locally against Postgres with full **agent trace** in the UI.
-
-Built to show how agent teams remove analyst bottlenecks for metrics, breakdowns, and investigations (portfolio + local pilot ready).
+**Conversational BI agent** — ask business questions in natural language, get validated read-only SQL, insights, charts, and an audit trail. Runs locally against Docker Postgres with **demo mode** (no OpenAI key required).
 
 | | |
 |---|---|
-| **Live demo** | _Add after Vercel deploy:_ `https://your-app.vercel.app` |
-| **GitHub** | `https://github.com/JkayAy/data_analytics_and_BI_agent` |
+| **GitHub** | https://github.com/JkayAy/data_analytics_and_BI_agent |
 | **Agent roster** | `GET /v1/agent/capabilities` |
-| **Roadmap** | [docs/ENTERPRISE_ROADMAP.md](docs/ENTERPRISE_ROADMAP.md) |
+| **Claim audit** | [docs/CLAIM_AUDIT.md](docs/CLAIM_AUDIT.md) |
 
-## Features (v0.3 — multi-agent)
+## What works today (verified)
 
-- **8-agent pipeline** with LangGraph (+ sequential fallback)
-- **Investigation mode** — multi-query driver analysis (try: *Why is MRR uneven across regions?*)
-- Chat UI with **agent trace**, plan, and investigation SQL
-- Demo mode (no OpenAI) + LLM mode for open-ended asks
-- Governance: sqlglot, schema allowlist, LIMIT, timeout, PII mask
-- Audit log + feedback
-- Docker Postgres seed, CI, Vercel/Railway configs
+- **Demo mode (no API key):** All six example questions below return SQL, pass governance, execute against Postgres, produce insight + chart, and log an audit row. Covered by `tests/test_demo_flow.py` (33 tests total).
+- **8-agent pipeline:** Planner → SQL Specialist → Governance → Executor → Investigation → Analyst → Visualization → QA Critic — implemented in `apps/api/insightbridge/multi_agent/nodes.py`, orchestrated via LangGraph (sequential fallback if LangGraph unavailable). Every demo ask produces a trace entry for all eight agents.
+- **Investigation mode (demo):** *Why is MRR uneven across regions?* runs extra follow-up queries and ranked drivers.
+- **Governance:** sqlglot validation, schema allowlist, row limit, timeout, PII column masking (deterministic, not LLM-based).
+- **Web UI:** Chat, agent trace, audit log, feedback.
+- **LLM mode:** Supported when `OPENAI_API_KEY` is set — **not verified in CI**; Planner/QA use OpenAI, SQL uses `generate_sql()` with LLM fallback.
 
-## Problem → solution
+## Optional enterprise modules (code present; run migrations)
 
-| Business pain | InsightBridge |
-|---------------|---------------|
-| Days waiting for SQL + dashboards | Minutes via conversational ask |
-| Distrust of “AI SQL” | Every answer shows generated SQL + audit row |
-| Data risk | SELECT-only, schema allowlist, LIMIT, timeout, PII column masking |
+These are implemented in the API but require `scripts/migrate-docker.ps1` (includes `07_e5_tenancy.sql`, `08_e6_delivery.sql`) and optional env config:
+
+| Module | Docs |
+|--------|------|
+| E5 — magic-link JWT, org RBAC, encrypted connections, audit CSV | [E5_TENANCY.md](docs/E5_TENANCY.md) |
+| E6 — Slack/Teams webhooks, scheduled reports, usage caps | [E6_DELIVERY.md](docs/E6_DELIVERY.md) |
+
+Default local setup uses `AUTH_REQUIRED=false` (demo org) so chat works without login.
+
+## Quick start (local)
+
+**Prerequisites:** Docker Desktop, Python 3.11+, Node 20+
+
+```bash
+docker compose up -d
+```
+
+Apply migrations (fresh clone or after pull):
+
+```powershell
+# Windows
+.\scripts\migrate-docker.ps1
+```
+
+**API**
+
+```bash
+cd apps/api
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+copy ..\..\.env.example ..\..\.env   # or cp on macOS/Linux
+uvicorn insightbridge.main:app --reload --port 8000
+```
+
+**Web**
+
+```bash
+cd apps/web
+npm install
+# Windows PowerShell:
+$env:NEXT_PUBLIC_API_URL="http://localhost:8000"
+npm run dev
+```
+
+Open http://localhost:3000 · Audit: http://localhost:3000/audit
+
+**Verify demo mode:** `cd apps/api && pytest tests/test_demo_flow.py -v`
+
+## Example questions (demo mode, no API key)
+
+- What is our total MRR?
+- Show MRR by region
+- What is our churn rate?
+- Top 10 customers by MRR
+- Order revenue by month
+- **Why is MRR uneven across regions?** (investigation mode)
 
 ## Architecture
 
@@ -46,106 +94,37 @@ flowchart TB
   V --> Q[QA Critic]
 ```
 
-Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/MULTI_AGENT_BLUEPRINT.md](docs/MULTI_AGENT_BLUEPRINT.md)
+Details: [ARCHITECTURE.md](docs/ARCHITECTURE.md) · [AGENTS.md](docs/AGENTS.md)
 
 ## Tech stack
 
-Next.js 15 · FastAPI · **LangGraph** · PostgreSQL · sqlglot · OpenAI (optional) · Recharts
-
-## Quick start (local)
-
-**Prerequisites:** Docker Desktop, Python 3.11+, Node 20+
-
-```bash
-docker compose up -d
-```
-
-**API**
-
-```bash
-cd apps/api
-python -m venv .venv
-# Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-cp ../../.env.example ../../.env   # Windows: copy
-uvicorn insightbridge.main:app --reload --port 8000
-```
-
-**Web**
-
-```bash
-cd apps/web
-npm install
-# Windows PowerShell:
-$env:NEXT_PUBLIC_API_URL="http://localhost:8000"
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) · Audit: [http://localhost:3000/audit](http://localhost:3000/audit)
-
-**Existing DB?** Run `infra/seed/03_migrate.sql` after pulling latest.
-
-## Example questions (demo mode, no API key)
-
-- What is our total MRR?
-- Show MRR by region
-- What is our churn rate?
-- Top 10 customers by MRR
-- Order revenue by month
-- **Why is MRR uneven across regions?** (investigation mode — multi-agent)
+Next.js 15 · FastAPI · LangGraph · PostgreSQL · sqlglot · OpenAI (optional) · Recharts
 
 ## API
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/health` | Status, demo_mode, multi_agent |
-| GET | `/v1/agent/capabilities` | Agent roster + graph version |
+| GET | `/health` | Status, `demo_mode`, version |
+| GET | `/v1/agent/capabilities` | Agent roster |
 | GET | `/v1/audit/query-runs` | Audit log |
 | POST | `/v1/conversations` | New thread |
 | POST | `/v1/conversations/{id}/ask` | Ask + audit |
 | POST | `/v1/query-runs/{id}/feedback` | Up/down vote |
-| POST | `/v1/ask` | Stateless ask |
 
-## Deploy later (Vercel + Railway)
+## Tests & CI
 
-1. Push to GitHub — [docs/PUSH_TO_GITHUB.md](docs/PUSH_TO_GITHUB.md)
-2. Railway: Postgres + run `infra/seed/01_schema.sql`, `02_data.sql`
-3. Railway: deploy API (`apps/api/Dockerfile`, root context) — see [docs/DEPLOY.md](docs/DEPLOY.md)
-4. Vercel: root directory **`apps/web`**, set `NEXT_PUBLIC_API_URL`, optional env vars
-
-## Project structure
-
-```
-apps/api/          FastAPI agent + validator
-apps/web/          Next.js UI (chat, audit, about)
-packages/semantic-layer/metrics.yaml
-infra/seed/        Postgres schema + demo data
-docs/              ENTERPRISE_ROADMAP, MULTI_AGENT_BLUEPRINT, AGENTS, DEPLOY
-apps/api/insightbridge/multi_agent/   LangGraph orchestration
+```bash
+cd apps/api && pytest -q && ruff check insightbridge tests
+cd apps/web && npm run lint && npm run build
 ```
 
-## Phase E5 — Tenancy & compliance
+## Roadmap (not verified end-to-end)
 
-- Magic-link JWT auth, org RBAC, org-scoped data
-- Encrypted warehouse connection configs
-- Audit CSV export
+- Public Vercel/Railway deploy (configs exist in `docs/DEPLOY.md`)
+- Stripe billing · OIDC SSO · analyst metric approval workflow
 
-See [docs/E5_TENANCY.md](docs/E5_TENANCY.md).
-
-## Phase E6 — Delivery & ops
-
-- Slack/Teams webhooks, scheduled reports, usage caps
-
-See [docs/E6_DELIVERY.md](docs/E6_DELIVERY.md).
-
-## Roadmap (beyond E6)
-
-Slack/Teams · scheduled agents · Stripe · SSO · analyst metric approval workflow
+See [ENTERPRISE_ROADMAP.md](docs/ENTERPRISE_ROADMAP.md).
 
 ## License
 
 MIT
-
-## Resume bullet
-
-Built InsightBridge, a conversational BI agent: natural language → validated read-only SQL on Postgres, automated insights and charts, semantic metrics layer, audit log, and feedback — deployable on Vercel + Railway.
