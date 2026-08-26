@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Run due scheduled reports once. Usage: from repo root, with API venv active:
   cd apps/api && python -m insightbridge.cli_run_schedules
 """
