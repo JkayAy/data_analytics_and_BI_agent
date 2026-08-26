@@ -38,7 +38,7 @@ jobs:
       - name: Load demo schema and seed data
         run: |
           sudo apt-get update && sudo apt-get install -y postgresql-client
-          for f in 01_schema.sql 02_data.sql 03_migrate.sql 05_run_metadata.sql 06_connections.sql; do
+          for f in 01_schema.sql 02_data.sql 03_migrate.sql 05_run_metadata.sql 06_connections.sql 07_e5_tenancy.sql; do
             psql "$DATABASE_URL" -f "../../infra/seed/$f"
           done
       - run: pytest -q
