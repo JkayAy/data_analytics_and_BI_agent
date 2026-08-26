@@ -11,6 +11,22 @@ jobs:
     defaults:
       run:
         working-directory: apps/api
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: insight
+          POSTGRES_PASSWORD: insight
+          POSTGRES_DB: insightbridge
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://insight:insight@localhost:5432/insightbridge
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -19,6 +35,12 @@ jobs:
       - run: pip install -r requirements.txt
       - run: pip install ruff
       - run: ruff check insightbridge tests
+      - name: Load demo schema and seed data
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          for f in 01_schema.sql 02_data.sql 03_migrate.sql 05_run_metadata.sql 06_connections.sql; do
+            psql "$DATABASE_URL" -f "../../infra/seed/$f"
+          done
       - run: pytest -q
 
   web:
